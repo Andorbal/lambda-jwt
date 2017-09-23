@@ -1,5 +1,7 @@
 # lambda-jwt
 
+## NOTE: THIS README IS FROM THE ORIGINAL PROJECT AND HAS NOT YET BEEN UPDATED. COMING SOON!
+
 [![Build](https://travis-ci.org/auth0/lambda-jwt.png)](http://travis-ci.org/auth0/lambda-jwt)
 
 Middleware that validates JsonWebTokens and sets `req.user`.
