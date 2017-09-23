@@ -1,6 +1,6 @@
-# express-jwt
+# lambda-jwt
 
-[![Build](https://travis-ci.org/auth0/express-jwt.png)](http://travis-ci.org/auth0/express-jwt)
+[![Build](https://travis-ci.org/auth0/lambda-jwt.png)](http://travis-ci.org/auth0/lambda-jwt)
 
 Middleware that validates JsonWebTokens and sets `req.user`.
 
@@ -10,7 +10,7 @@ often issued using OpenID Connect.
 
 ## Install
 
-    $ npm install express-jwt
+    $ npm install lambda-jwt
 
 ## Usage
 
@@ -21,7 +21,7 @@ to be used by later middleware for authorization and access control.
 For example,
 
 ```javascript
-var jwt = require('express-jwt');
+var jwt = require('lambda-jwt');
 
 app.get('/protected',
   jwt({secret: 'shhhhhhared-secret'}),
@@ -82,7 +82,7 @@ Both `resultProperty` and `requestProperty` utilize [lodash.set](https://lodash.
 A custom function for extracting the token from a request can be specified with
 the `getToken` option. This is useful if you need to pass the token through a
 query parameter or a cookie. You can throw an error in this function and it will
-be handled by `express-jwt`.
+be handled by `lambda-jwt`.
 
 ```javascript
 app.use(jwt({
@@ -109,7 +109,7 @@ If you are developing an application in which the secret used to sign tokens is 
 
 For example, if the secret varies based on the [JWT issuer](http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html#issDef):
 ```javascript
-var jwt = require('express-jwt');
+var jwt = require('lambda-jwt');
 var data = require('./data');
 var utilities = require('./utilities');
 
@@ -143,7 +143,7 @@ It is possible that some tokens will need to be revoked so they cannot be used a
 
 For example, if the `(iss, jti)` claim pair is used to identify a JWT:
 ```javascript
-var jwt = require('express-jwt');
+var jwt = require('lambda-jwt');
 var data = require('./data');
 var utilities = require('./utilities');
 
@@ -192,7 +192,7 @@ app.use(jwt({
 ## Related Modules
 
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) — JSON Web Token sign and verification
-- [express-jwt-permissions](https://github.com/MichielDeMey/express-jwt-permissions) - Permissions middleware for JWT tokens
+- [lambda-jwt-permissions](https://github.com/MichielDeMey/lambda-jwt-permissions) - Permissions middleware for JWT tokens
 
 ## Tests
 
@@ -200,7 +200,7 @@ app.use(jwt({
     $ npm test
 
 ## Contributors
-Check them out [here](https://github.com/auth0/express-jwt/graphs/contributors)
+Check them out [here](https://github.com/auth0/lambda-jwt/graphs/contributors)
 
 ## Issue Reporting
 
