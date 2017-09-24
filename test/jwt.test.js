@@ -29,15 +29,6 @@ describe("failure tests", function() {
     });
   });
 
-  it("support unless skip", function() {
-    event.originalUrl = "/index.html";
-    expressjwt({ secret: "shhhh" }).unless({
-      path: "/index.html"
-    })(event, res, function(err) {
-      assert.ok(!err);
-    });
-  });
-
   it("should throw if authorization header is malformed", function() {
     event.headers = {};
     event.headers.authorization = "wrong";

@@ -1,5 +1,5 @@
 {
-  "name": "lambda-jwt",
+  "name": "lambda-jwt-auth",
   "version": "0.0.1",
   "description": "JWT authentication authorizer.",
   "keywords": [
@@ -37,16 +37,14 @@
   "main": "./lib",
   "dependencies": {
     "async": "^1.5.0",
-    "express-unless": "^0.3.0",
-    "jsonwebtoken": "^7.3.0",
-    "lodash.set": "^4.0.0"
+    "jsonwebtoken": "^7.3.0"
   },
   "devDependencies": {
     "conventional-changelog": "~1.1.0",
     "mocha": "1.x.x"
   },
   "engines": {
-    "node": ">= 0.4.0"
+    "node": ">= 4.3.2"
   },
   "scripts": {
     "test": "node_modules/.bin/mocha --reporter spec"
