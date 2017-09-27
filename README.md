@@ -2,13 +2,13 @@
 
 ## NOTE: THIS README IS FROM THE ORIGINAL PROJECT AND HAS NOT YET BEEN UPDATED. COMING SOON!
 
-[![Build](https://travis-ci.org/auth0/lambda-jwt.png)](http://travis-ci.org/auth0/lambda-jwt)
+[![Build](https://travis-ci.org/Andorbal/lambda-jwt.png)](http://travis-ci.org/Andorbal/lambda-jwt)
 
-Middleware that validates JsonWebTokens and sets `req.user`.
+Custom AWS [API Gateway authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html#api-gateway-custom-authorizer-output) that validates JsonWebTokens and sets `principalId`.
 
-This module lets you authenticate HTTP requests using JWT tokens in your Node.js
-applications.  JWTs are typically used to protect API endpoints, and are
-often issued using OpenID Connect.
+This module lets you authenticate HTTP requests using JWT 
+tokens in your API Gateway applications.  JWTs are typically 
+used to protect API endpoints, and areoften issued using OpenID Connect.
 
 ## Install
 
@@ -16,21 +16,16 @@ often issued using OpenID Connect.
 
 ## Usage
 
-The JWT authentication middleware authenticates callers using a JWT.
-If the token is valid, `req.user` will be set with the JSON object decoded
-to be used by later middleware for authorization and access control.
+The JWT authentication authorizer authenticates callers using a JWT.
+If the token is valid, `principalId` will be set in the event parameter
+of the lambda function that maps to the API Gateway endpoint.
 
 For example,
 
 ```javascript
 var jwt = require('lambda-jwt');
 
-app.get('/protected',
-  jwt({secret: 'shhhhhhared-secret'}),
-  function(req, res) {
-    if (!req.user.admin) return res.sendStatus(401);
-    res.sendStatus(200);
-  });
+exports.handler = jwt({secret: 'shhhhhhared-secret'});
 ```
 
 You can specify audience and/or issuer as well:
@@ -48,16 +43,6 @@ If you are using a base64 URL-encoded secret, pass a `Buffer` with `base64` enco
 ```javascript
 jwt({ secret: new Buffer('shhhhhhared-secret', 'base64') })
 ```
-
-Optionally you can make some paths unprotected as follows:
-
-```javascript
-app.use(jwt({ secret: 'shhhhhhared-secret'}).unless({path: ['/token']}));
-```
-
-This is especially useful when applying to multiple routes. In the example above, `path` can be a string, a regexp, or an array of any of those.
-
-> For more details on the `.unless` syntax including additional options, please see [express-unless](https://github.com/jfromaniello/express-unless).
 
 This module also support tokens signed with public/private key pairs. Instead of a secret, you can specify a Buffer with the public key
 
