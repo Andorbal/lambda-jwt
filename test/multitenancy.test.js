@@ -2,8 +2,10 @@ var jwt = require("jsonwebtoken");
 var assert = require("assert");
 var expressjwt = require("../lib");
 var UnauthorizedError = require("../lib/errors/UnauthorizedError");
+const createLogger = require("./testLogger");
 
 describe("multitenancy", function() {
+  const logger = createLogger();
   var event = {
     type: "REQUEST",
     methodArn:
@@ -71,11 +73,12 @@ describe("multitenancy", function() {
       secret: secretCallback,
       isRevoked: function(event, payload, done) {
         done(null, true);
-      }
+      },
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "revoked_token");
-      assert.equal(err.message, "The token has been revoked.");
+      assert(logger.error.calledWith("The token has been revoked"));
+      assert.equal(err, "Unauthorized");
     });
   });
 });

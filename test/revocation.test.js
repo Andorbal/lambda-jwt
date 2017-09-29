@@ -2,8 +2,10 @@ var jwt = require("jsonwebtoken");
 var assert = require("assert");
 var expressjwt = require("../lib");
 var UnauthorizedError = require("../lib/errors/UnauthorizedError");
+const createLogger = require("./testLogger");
 
 describe("revoked jwts", function() {
+  const logger = createLogger();
   var secret = "shhhhhh";
 
   var revoked_id = "1234";
@@ -13,7 +15,8 @@ describe("revoked jwts", function() {
     isRevoked: function(event, payload, done) {
       done(null, payload.jti && payload.jti === revoked_id);
     },
-    extractPrincipalId: x => x.foo
+    extractPrincipalId: x => x.foo,
+    logger
   });
 
   it("should throw if token is revoked", function() {
@@ -29,8 +32,9 @@ describe("revoked jwts", function() {
 
     middleware(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "revoked_token");
-      assert.equal(err.message, "The token has been revoked.");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "The token has been revoked");
+      //assert(logger.error.calledWith("The token has been revoked"));
     });
   });
 
@@ -65,10 +69,12 @@ describe("revoked jwts", function() {
       secret: secret,
       isRevoked: function(event, payload, done) {
         done(new Error("An error ocurred"));
-      }
+      },
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.message, "An error ocurred");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "The token has been revoked");
     });
   });
 });

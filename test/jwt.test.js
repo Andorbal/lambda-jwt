@@ -2,8 +2,10 @@ var jwt = require("jsonwebtoken");
 var assert = require("assert");
 var expressjwt = require("../lib");
 var UnauthorizedError = require("../lib/errors/UnauthorizedError");
+const createLogger = require("./testLogger");
 
 describe("failure tests", function() {
+  const logger = createLogger();
   const event = {
     type: "REQUEST",
     methodArn:
@@ -21,65 +23,89 @@ describe("failure tests", function() {
   });
 
   it("should throw if no authorization header and credentials are required", function() {
+    const logger = createLogger();
     expressjwt({
-      secret: "shhhh"
+      secret: "shhhh",
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "credentials_required");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "No authorization token was found");
     });
   });
 
   it("should throw if authorization header is malformed", function() {
+    const logger = createLogger();
     event.headers = {};
     event.headers.authorization = "wrong";
-    expressjwt({ secret: "shhhh" })(event, res, function(err) {
+    expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "credentials_bad_format");
+      assert.equal(err, "Unauthorized");
+      assert.equal(
+        logger.error.args[0][0],
+        "Format is Authorization: Bearer [token]"
+      );
     });
   });
 
   it("should throw if authorization header is not Bearer", function() {
+    const logger = createLogger();
     event.headers = {};
     event.headers.authorization = "Basic foobar";
-    expressjwt({ secret: "shhhh" })(event, res, function(err) {
+    expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "credentials_bad_scheme");
+      assert.equal(err, "Unauthorized");
+      assert.equal(
+        logger.error.args[0][0],
+        "Format is Authorization: Bearer [token]"
+      );
     });
   });
 
   it("should throw if authorization header is not well-formatted jwt", function() {
+    const logger = createLogger();
     event.headers = {};
     event.headers.authorization = "Bearer wrongjwt";
-    expressjwt({ secret: "shhhh" })(event, res, function(err) {
+    expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][1].message, "jwt malformed");
     });
   });
 
   it("should throw if jwt is an invalid json", function() {
+    const logger = createLogger();
     event.headers = {};
     event.headers.authorization =
       "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.yJ1c2VybmFtZSI6InNhZ3VpYXIiLCJpYXQiOjE0NzEwMTg2MzUsImV4cCI6MTQ3MzYxMDYzNX0.foo";
-    expressjwt({ secret: "shhhh" })(event, res, function(err) {
+    expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
+      assert.equal(err, "Unauthorized");
+      assert.equal(
+        logger.error.args[0][1].message,
+        "Unexpected token ȝ in JSON at position 0"
+      );
     });
   });
 
   it("should throw if authorization header is not valid jwt", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var token = jwt.sign({ foo: "bar" }, secret);
 
     event.headers = {};
     event.headers.authorization = "Bearer " + token;
-    expressjwt({ secret: "different-shhhh" })(event, res, function(err) {
+    expressjwt({ secret: "different-shhhh", logger })(event, res, function(
+      err
+    ) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
-      assert.equal(err.message, "invalid signature");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][1].message, "invalid signature");
     });
   });
 
   it("should throw if audience is not expected", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var token = jwt.sign({ foo: "bar", aud: "expected-audience" }, secret);
 
@@ -87,32 +113,34 @@ describe("failure tests", function() {
     event.headers.authorization = "Bearer " + token;
     expressjwt({
       secret: "shhhhhh",
-      audience: "not-expected-audience"
+      audience: "not-expected-audience",
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
+      assert.equal(err, "Unauthorized");
       assert.equal(
-        err.message,
+        logger.error.args[0][1].message,
         "jwt audience invalid. expected: not-expected-audience"
       );
     });
   });
 
   it("should throw if token is expired", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var token = jwt.sign({ foo: "bar", exp: 1382412921 }, secret);
 
     event.headers = {};
     event.headers.authorization = "Bearer " + token;
-    expressjwt({ secret: "shhhhhh" })(event, res, function(err) {
+    expressjwt({ secret: "shhhhhh", logger })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
-      assert.equal(err.inner.name, "TokenExpiredError");
-      assert.equal(err.message, "jwt expired");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "Invalid token");
     });
   });
 
   it("should throw if token issuer is wrong", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var token = jwt.sign({ foo: "bar", iss: "http://foo" }, secret);
 
@@ -120,15 +148,20 @@ describe("failure tests", function() {
     event.headers.authorization = "Bearer " + token;
     expressjwt({
       secret: "shhhhhh",
-      issuer: "http://wrong"
+      issuer: "http://wrong",
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
-      assert.equal(err.message, "jwt issuer invalid. expected: http://wrong");
+      assert.equal(err, "Unauthorized");
+      assert.equal(
+        logger.error.args[0][1].message,
+        "jwt issuer invalid. expected: http://wrong"
+      );
     });
   });
 
   it("should use errors thrown from custom getToken function", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var token = jwt.sign({ foo: "bar" }, secret);
 
@@ -140,7 +173,8 @@ describe("failure tests", function() {
 
     expressjwt({
       secret: "shhhhhh",
-      getToken: getTokenThatThrowsError
+      getToken: getTokenThatThrowsError,
+      logger
     })(event, res, function(err) {
       assert.ok(err);
       assert.equal(err.code, "invalid_token");
@@ -160,10 +194,10 @@ describe("failure tests", function() {
     // build eventuest
     event.headers = [];
     event.headers.authorization = "Bearer " + newToken;
-    expressjwt({ secret: secret })(event, res, function(err) {
+    expressjwt({ secret: secret, logger })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
-      assert.equal(err.message, "invalid token");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "Invalid token");
     });
   });
 
@@ -175,11 +209,12 @@ describe("failure tests", function() {
     event.headers.authorization = "Bearer " + token;
     expressjwt({
       secret: secret,
-      credentialsRequired: false
+      credentialsRequired: false,
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
-      assert.equal(err.message, "jwt expired");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "Invalid token");
     });
   });
 
@@ -191,16 +226,18 @@ describe("failure tests", function() {
     event.headers.authorization = "Bearer " + token;
     expressjwt({
       secret: "not the secret",
-      credentialsRequired: false
+      credentialsRequired: false,
+      logger
     })(event, res, function(err) {
       assert.ok(err);
-      assert.equal(err.code, "invalid_token");
-      assert.equal(err.message, "invalid signature");
+      assert.equal(err, "Unauthorized");
+      assert.equal(logger.error.args[0][0], "Invalid token");
     });
   });
 });
 
 describe("work tests", function() {
+  const logger = createLogger();
   const event = {
     type: "REQUEST",
     methodArn:
@@ -270,27 +307,14 @@ describe("work tests", function() {
   });
 
   it("should not work if no authorization header", function() {
-    expressjwt({ secret: "shhhh" })(event, res, function(err) {
+    const logger = createLogger();
+    expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
       assert(typeof err !== "undefined");
     });
   });
 
-  it("should produce a stack trace that includes the failure reason", function() {
-    var token = jwt.sign({ foo: "bar" }, "secretA");
-    event.headers = {};
-    event.headers.authorization = "Bearer " + token;
-
-    expressjwt({ secret: "secretB" })(event, res, function(err) {
-      var index = err.stack.indexOf("UnauthorizedError: invalid signature");
-      assert.equal(
-        index,
-        0,
-        "Stack trace didn't include 'invalid signature' message."
-      );
-    });
-  });
-
   it("should work with a custom getToken function", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var token = jwt.sign({ foo: "bar" }, secret);
 
@@ -305,13 +329,15 @@ describe("work tests", function() {
     expressjwt({
       secret: secret,
       getToken: getTokenFromQuery,
-      extractPrincipalId: x => x.foo
+      extractPrincipalId: x => x.foo,
+      logger
     })(event, res, function(err, policy) {
       assert.equal("bar", policy.principalId);
     });
   });
 
   it("should work with a secretCallback function that accepts header argument", function() {
+    const logger = createLogger();
     var secret = "shhhhhh";
     var secretCallback = function(_, headers, payload, cb) {
       assert.equal(headers.alg, "HS256");
@@ -326,7 +352,8 @@ describe("work tests", function() {
     event.headers.authorization = "Bearer " + token;
     expressjwt({
       secret: secretCallback,
-      extractPrincipalId: x => x.foo
+      extractPrincipalId: x => x.foo,
+      logger
     })(event, res, function(err, policy) {
       assert.equal(undefined, err);
       assert.equal("bar", policy.principalId);
