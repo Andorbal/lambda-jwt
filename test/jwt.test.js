@@ -306,6 +306,43 @@ describe("work tests", function() {
     });
   });
 
+  describe("context", function() {
+    function execute(token, callback) {
+      var secret = "shhhhhh";
+      var token = jwt.sign(token, secret);
+
+      res = {};
+      event.headers = {};
+      event.headers.authorization = "Bearer " + token;
+      expressjwt({
+        secret: secret,
+        extractPrincipalId: "foo"
+      })(event, res, function(err, policy) {
+        callback(policy);
+      });
+    }
+
+    it("should be string when token is string", function() {
+      execute("foo", function(policy) {
+        assert.equal(policy.context, "foo");
+      });
+    });
+
+    it("should be json with simple values", function() {
+      execute({ s: "s", n: 1, b: true }, function(policy) {
+        assert.equal(policy.context.s, "s");
+        assert.equal(policy.context.n, 1);
+        assert.equal(policy.context.b, true);
+      });
+    });
+
+    it("should be json with flattened keys", function() {
+      execute({ root: { nested: "foo" } }, function(policy) {
+        assert.equal(policy.context["root.nested"], "foo");
+      });
+    });
+  });
+
   it("should not work if no authorization header", function() {
     const logger = createLogger();
     expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
