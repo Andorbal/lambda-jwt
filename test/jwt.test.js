@@ -81,9 +81,8 @@ describe("failure tests", function() {
     expressjwt({ secret: "shhhh", logger })(event, res, function(err) {
       assert.ok(err);
       assert.equal(err, "Unauthorized");
-      assert.equal(
-        logger.error.args[0][1].message,
-        "Unexpected token ȝ in JSON at position 0"
+      assert.ok(
+        logger.error.args[0][1].message.indexOf("Unexpected token ȝ") !== -1
       );
     });
   });
